@@ -1,31 +1,22 @@
-FuseFS README
+PFuseFS README
 ============
-
-    FuseFS is a library aimed at allowing Ruby programmers to quickly and
-  easily create virtual filesystems with little more than a few lines of code.
-  
-    A "hello world" file system equivalent to the one demonstrated on
-  fuse.sourceforge.org is just 20 lines of code!
-
-    FuseFS is *NOT* a full implementation of the FUSE api. rfuse
-  is designed for that.
-
+  Plain FUSE bindings.
+  The C ext is derived from fusefs-osx but stripped back to allow more logic in Ruby - the language you'd rather do tricky things in.
+  The FuseFS library also includes FuseFS::DirEntry, FuseFS::FileEntry and FuseFS::Entries helpers, the latter calling back to your getattr function to create an accurate stat struct.
 
 Requirements
 ------------
-
   * FUSE (http://fuse.sourceforge.org)
   * Ruby 1.8
  (* C compiler)
 
-
 Install
 -------
-
-	gem install fizx-fusefs
+	gem install dsturnbull-fusefs
 
 Usage
 -----
+  require 'fusefs'
 
   Some sample ruby filesystems are listed in "sample/"
 
@@ -38,9 +29,8 @@ Usage
 
 License
 -------
-
   MIT license, in file "LICENSE"
 
 
-Author: Greg Millam <walker@deafcode.com>.
-Port/Maintainer: Kyle Maxwell <kyle@kylemaxwell.com>
+Authors: David Turnbull <dsturnbull@me.com>
+Inspired by: Greg Millam <walker@deafcode.com>, Kyle Maxwell <kyle@kylemaxwell.com> (fizx/fusefs-osx)

@@ -2,243 +2,113 @@
 #
 # The ruby portion of FuseFS main library
 #
-# This includes helper functions, common uses, etc.
+# Helper functions
+
+# TODO sig handler?
 
 require File.dirname(__FILE__) + '/../ext/fusefs_lib'
 
 module FuseFS
+  S_IFDIR = 0o0040000
+  S_IFREG = 0o0100000
+
   @running = true
-  def FuseFS.run
-    fd = FuseFS.fuse_fd
-    begin
-      io = IO.for_fd(fd)
-    rescue Errno::EBADF
-      raise "fuse is not mounted"
-    end
-    while @running
-      IO.select([io])
-      FuseFS.process
-    end
-  end
-  def FuseFS.unmount
-    system("umount #{@mountpoint}")
-  end
-  def FuseFS.exit
-    @running = false
-  end
-  class FuseDir
-    def split_path(path)
-      cur, *rest = path.scan(/[^\/]+/)
-      if rest.empty?
-        [ cur, nil ]
-      else
-        [ cur, File.join(rest) ]
+
+  class << self
+    def run
+      fd = fuse_fd
+
+      begin
+        io = IO.for_fd(fd)
+      rescue Errno::EBADF
+        raise "fuse is not mounted"
+      end
+
+      while @running
+        IO.select([io])
+        process
       end
     end
-    def scan_path(path)
-      path.scan(/[^\/]+/)
+
+    def unmount
+      system("umount #{@mountpoint}")
+    end
+
+    def exit
+      @running = false
+    end
+
+    def Entries(path, entries)
+      entries.map do |entry|
+        @root.getattr(File.join(path, entry))
+      end
+    end
+
+  end
+
+  class Stat
+    attr_accessor :st_mode
+    attr_accessor :st_nlink
+    attr_accessor :st_size
+    attr_accessor :st_uid
+    attr_accessor :st_gid
+    attr_accessor :st_mtime
+    attr_accessor :st_atime
+    attr_accessor :st_ctime
+    attr_accessor :name
+
+    def initialize(name='undefined')
+      @st_mode  = 0o755 | mode_mask
+      @st_nlink = 3
+      @st_size  = 0
+      @st_uid   = 510
+      @st_gid   = 20
+      @st_mtime = Time.now.to_i
+      @st_atime = Time.now.to_i
+      @st_ctime = Time.now.to_i
+      @name     = name
+    end
+
+    def mode_mask
+      self.class == FileEntry ? S_IFREG : S_IFDIR
     end
   end
-  class MetaDir < FuseDir
+
+  class FileEntry < Stat
+  end
+
+  class DirEntry < Stat
+    def initialize(*args)
+      super(*args)
+      @st_size = 4096
+    end
+  end
+
+  class StatVFS
+    attr_accessor :f_bsize
+    attr_accessor :f_frsize
+    attr_accessor :f_blocks
+    attr_accessor :f_bfree
+    attr_accessor :f_bavail
+    attr_accessor :f_files
+    attr_accessor :f_ffree
+    attr_accessor :f_favail
+    attr_accessor :f_fsid
+    attr_accessor :f_flag
+    attr_accessor :f_namemax
+
     def initialize
-      @subdirs  = Hash.new(nil)
-      @files    = Hash.new(nil)
-    end
-
-    # Contents of directory.
-    def contents(path)
-      base, rest = split_path(path)
-      case
-      when base.nil?
-        (@files.keys + @subdirs.keys).sort.uniq
-      when ! @subdirs.has_key?(base)
-        nil
-      when rest.nil?
-        @subdirs[base].contents('/')
-      else
-        @subdirs[base].contents(rest)
-      end
-    end
-
-    # File types
-    def directory?(path)
-      base, rest = split_path(path)
-      case
-      when base.nil?
-        true
-      when ! @subdirs.has_key?(base)
-        false
-      when rest.nil?
-        true
-      else
-        @subdirs[base].directory?(rest)
-      end
-    end
-    def file?(path)
-      base, rest = split_path(path)
-      case
-      when base.nil?
-        false
-      when rest.nil?
-        @files.has_key?(base)
-      when ! @subdirs.has_key?(base)
-        false
-      else
-        @subdirs[base].file?(rest)
-      end
-    end
-    
-    # File Reading
-    def read_file(path)
-      base, rest = split_path(path)
-      case
-      when base.nil?
-        nil
-      when rest.nil?
-        @files[base].to_s
-      when ! @subdirs.has_key?(base)
-        nil
-      else
-        @subdirs[base].read_file(rest)
-      end
-    end
-    
-    # File sizing
-    def size(path)
-      base, rest = split_path(path)
-      case
-      when base.nil?
-        0
-      when rest.nil?
-        obj = @files[base]
-        obj.respond_to?(:size) ? obj.size : 0
-      when ! @subdirs.has_key?(base)
-        0
-      else
-        dir = @subdirs[base]
-        dir.respond_to?(:size) ? dir.size(rest) : 0
-      end
-    end
-    
-    # Write to a file
-    def can_write?(path)
-      return false unless Process.uid == FuseFS.reader_uid
-      base, rest = split_path(path)
-      case
-      when base.nil?
-        true
-      when rest.nil?
-        true
-      when ! @subdirs.has_key?(base)
-        false
-      else
-        @subdirs[base].can_write?(rest)
-      end
-    end
-    def write_to(path,file)
-      base, rest = split_path(path)
-      case
-      when base.nil?
-        false
-      when rest.nil?
-        @files[base] = file
-      when ! @subdirs.has_key?(base)
-        false
-      else
-        @subdirs[base].write_to(rest,file)
-      end
-    end
-
-    # Delete a file
-    def can_delete?(path)
-      return false unless Process.uid == FuseFS.reader_uid
-      base, rest = split_path(path)
-      case
-      when base.nil?
-        false
-      when rest.nil?
-        @files.has_key?(base)
-      when ! @subdirs.has_key?(base)
-        false
-      else
-        @subdirs[base].can_delete?(rest)
-      end
-    end
-    def delete(path)
-      base, rest = split_path(path)
-      case
-      when base.nil?
-        nil
-      when rest.nil?
-        # Delete it.
-        @files.delete(base)
-      when ! @subdirs.has_key?(base)
-        nil
-      else
-        @subdirs[base].delete(rest)
-      end
-    end
-
-    # Make a new directory
-    def can_mkdir?(path)
-      return false unless Process.uid == FuseFS.reader_uid
-      base, rest = split_path(path)
-      case
-      when base.nil?
-        false
-      when rest.nil?
-        ! (@subdirs.has_key?(base) || @files.has_key?(base))
-      when ! @subdirs.has_key?(base)
-        false
-      else
-        @subdirs[base].can_mkdir?(rest)
-      end
-    end
-    def mkdir(path,dir=nil)
-      base, rest = split_path(path)
-      case
-      when base.nil?
-        false
-      when rest.nil?
-        dir ||= MetaDir.new
-        @subdirs[base] = dir
-        true
-      when ! @subdirs.has_key?(base)
-        false
-      else
-        @subdirs[base].mkdir(rest,dir)
-      end
-    end
-
-    # Delete an existing directory.
-    def can_rmdir?(path)
-      return false unless Process.uid == FuseFS.reader_uid
-      base, rest = split_path(path)
-      case
-      when base.nil?
-        false
-      when rest.nil?
-        @subdirs.has_key?(base)
-      when ! @subdirs.has_key?(base)
-        false
-      else
-        @subdirs[base].can_rmdir?(rest)
-      end
-    end
-    def rmdir(path)
-      base, rest = split_path(path)
-      dir ||= MetaDir.new
-      case
-      when base.nil?
-        false
-      when rest.nil?
-        @subdirs.delete(base)
-        true
-      when ! @subdirs.has_key?(base)
-        false
-      else
-        @subdirs[base].rmdir(rest,dir)
-      end
+      @f_bsize   = 0
+      @f_frsize  = 0
+      @f_blocks  = 0
+      @f_bfree   = 0
+      @f_bavail  = 0
+      @f_files   = 0
+      @f_ffree   = 0
+      @f_favail  = 0
+      @f_fsid    = 0
+      @f_flag    = 0
+      @f_namemax = 0
     end
   end
 end

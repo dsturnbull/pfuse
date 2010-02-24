@@ -9,3 +9,6 @@ pkg
 Makefile
 pid
 hello
+ext/conftest.dSYM/
+tags
+old.c

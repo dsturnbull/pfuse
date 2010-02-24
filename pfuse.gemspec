@@ -4,18 +4,19 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = %q{fusefs-osx}
-  s.version = "0.7.0"
+  s.name = %q{pfuse}
+  s.version = "0.7.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.authors = ["Kyle Maxwell"]
-  s.date = %q{2009-12-08}
+  s.authors = ["David Turnbull", "Kyle Maxwell"]
+  s.date = %q{2010-02-25}
   s.description = %q{Gemified}
-  s.email = %q{kyle@kylemaxwell.com}
+  s.email = %q{dsturnbull@me.com}
   s.extensions = ["ext/extconf.rb"]
   s.extra_rdoc_files = [
     "LICENSE",
-     "README"
+     "README",
+     "TODO"
   ]
   s.files = [
     ".document",
@@ -27,12 +28,11 @@ Gem::Specification.new do |s|
      "Rakefile",
      "TODO",
      "VERSION",
-     "ext/MANIFEST",
      "ext/extconf.rb",
      "ext/fusefs_fuse.c",
      "ext/fusefs_fuse.h",
      "ext/fusefs_lib.c",
-     "fusefs-osx.gemspec",
+     "ext/fusefs_lib.h",
      "hello.sh",
      "lib/fusefs.rb",
      "sample/demo.rb",
@@ -45,7 +45,7 @@ Gem::Specification.new do |s|
      "test/fusefs_test.rb",
      "test/test_helper.rb"
   ]
-  s.homepage = %q{http://github.com/fizx/fusefs}
+  s.homepage = %q{http://github.com/dsturnbull/pfuse}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.5}
