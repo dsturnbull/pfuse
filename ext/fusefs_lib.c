@@ -3,6 +3,7 @@
 // a clear way.
 
 // TODO
+// * return values are inconsistent
 // * fill in the rest of the fuse api
 // * turn half of these into macros
 // * sample FS for testing
@@ -65,7 +66,6 @@ rf_mkdir(const char *path, mode_t mode)
 }
 
 // rf_unlink                - remove directory entry
-// rm
 static int
 rf_unlink(const char *path)
 {
@@ -171,7 +171,6 @@ rf_chmod(const char *path, mode_t mode)
 // rf_chown                 - change owner and group of a file
 
 // rf_truncate              - truncate or extend a file to a specified length
-// delete backwards until offset
 static int
 rf_truncate(const char *path, off_t offset)
 {

@@ -61,8 +61,8 @@ module FuseFS
       @st_mode  = 0o755 | mode_mask
       @st_nlink = 3
       @st_size  = 0
-      @st_uid   = 510
-      @st_gid   = 20
+      @st_uid   = Process.uid
+      @st_gid   = Process.gid
       @st_mtime = Time.now.to_i
       @st_atime = Time.now.to_i
       @st_ctime = Time.now.to_i
