@@ -7,7 +7,7 @@ begin
     gem.name = "pfuse"
     gem.summary = %Q{fusefs}
     gem.description = %Q{Gemified}
-    gem.email = "dsturnbull@me.com"
+    gem.email = "dsturnbull@gmail.com"
     gem.homepage = "http://github.com/dsturnbull/pfuse"
     gem.authors = ["David Turnbull", "Kyle Maxwell"]
     gem.extensions = ["ext/extconf.rb"]
